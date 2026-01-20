@@ -15,12 +15,12 @@ class SearchPokemon {
     this.form = document.querySelector("form");
     this.input = document.querySelector("input");
     this.pokemons = [];
-    
+
     this.errorMessage = document.createElement("p");
     this.form.insertAdjacentElement("afterend", this.errorMessage);
 
     this.init();
-    this.resetDiv();  
+    this.resetDiv();
   }
 
   // Initialisation du module
@@ -40,8 +40,10 @@ class SearchPokemon {
 
   // Récupération des données JSON
   async getPokemons() {
-    const response = await fetch("https://tyradex.vercel.app/api/v1/pokemon")
-    this.pokemons = await response.json();
+    const response = await fetch("https://tyradex.vercel.app/api/v1/pokemon");
+    const data = await response.json();
+    // Filtrer MissingNo (pokedexId 0) de la liste
+    this.pokemons = data.filter((pokemon) => pokemon.pokedex_id !== 0);
   }
 
   // Récupération des infos du Pokémon recherché
@@ -49,13 +51,14 @@ class SearchPokemon {
     const pokemonsName = this.input.value.trim();
     const pokemonData = this.getDataToLower(pokemonsName);
     if (pokemonData) {
-
       this.showErrorMessage();
       const name = pokemonData.name.fr;
       const sprite = pokemonData.sprites.regular;
       const primaryType = pokemonData.types[0].name; // Premier type du Pokémon
-      const evolutions = pokemonData.evolution?.next?.map( evol => evol.name).join(" → ") || "Dernier stade d'évolution";
-      
+      const evolutions =
+        pokemonData.evolution?.next?.map((evol) => evol.name).join(" → ") ||
+        "Dernier stade d'évolution";
+
       // Création de la carte Pokémon
       const newCard = document.createElement("div");
       newCard.classList = "cardPokemon";
@@ -72,7 +75,7 @@ class SearchPokemon {
       // Ajout du Type du Pokémon
       const typeContainer = document.createElement("div");
       typeContainer.className = "cardPokemon_types";
-      pokemonData.types.forEach(type => {
+      pokemonData.types.forEach((type) => {
         const typeImg = document.createElement("img");
         typeImg.src = type.image;
         typeImg.alt = type.name;
@@ -100,7 +103,9 @@ class SearchPokemon {
           }
 
           // Chercher le Pokémon évolution dans la liste pour avoir son sprite
-          const evolPokemon = this.pokemons.find(p => p.name.fr === evol.name);
+          const evolPokemon = this.pokemons.find(
+            (p) => p.name.fr === evol.name
+          );
 
           const evolItem = document.createElement("div");
           evolItem.className = "cardPokemon_evolItem";
@@ -125,9 +130,8 @@ class SearchPokemon {
 
       newCard.append(imgPokemon, namePokemon, typeContainer, evolContainer);
       document.querySelector(".cards").appendChild(newCard);
-      
     } else {
-        this.showErrorMessage("Pokémon non trouvé");
+      this.showErrorMessage("Pokémon non trouvé");
     }
   }
 
@@ -138,13 +142,15 @@ class SearchPokemon {
     this.input.insertAdjacentElement("afterend", this.suggestionsBox);
     this.selectedIndex = -1;
 
-    this.input.addEventListener('input', () => {
+    this.input.addEventListener("input", () => {
       this.selectedIndex = -1;
       const autoInput = this.input.value.trim().toLowerCase();
       this.suggestionsBox.innerHTML = "";
 
-      const results = this.pokemons.filter(poke => poke.name?.fr?.toLowerCase().includes(autoInput));
-      results.forEach(poke => {
+      const results = this.pokemons.filter((poke) =>
+        poke.name?.fr?.toLowerCase().includes(autoInput)
+      );
+      results.forEach((poke) => {
         const pokeItem = document.createElement("li");
         pokeItem.textContent = poke.name.fr;
         pokeItem.addEventListener("click", () => {
@@ -155,15 +161,15 @@ class SearchPokemon {
       });
     });
     this.input.addEventListener("keydown", (e) => {
-      const items = this.suggestionsBox.querySelectorAll('li');
-      if(!items.length) return;
+      const items = this.suggestionsBox.querySelectorAll("li");
+      if (!items.length) return;
 
-      if(e.key === "ArrowDown") {
+      if (e.key === "ArrowDown") {
         e.preventDefault();
         this.selectedIndex = Math.min(this.selectedIndex + 1, items.length - 1);
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
-        this.selectedIndex = Math.max(this.selectedIndex -1, 0);
+        this.selectedIndex = Math.max(this.selectedIndex - 1, 0);
       } else if (e.key === "Enter" && this.selectedIndex >= 0) {
         e.preventDefault();
         this.input.value = items[this.selectedIndex].textContent;
@@ -172,14 +178,14 @@ class SearchPokemon {
         return;
       }
       items.forEach((item, i) => {
-      item.classList.toggle("selected", i === this.selectedIndex);
+        item.classList.toggle("selected", i === this.selectedIndex);
       });
-    })
+    });
   }
 
   // Gestion du background de la carte en fonction du type de pokémon
   getGoodColorType(type) {
-    switch(type) {
+    switch (type) {
       case "Normal":
         return "#A8A878";
       case "Feu":
@@ -221,16 +227,20 @@ class SearchPokemon {
     }
   }
 
-  // Gérer les erreurs de saisie 
-  showErrorMessage(message ="") {
+  // Gérer les erreurs de saisie
+  showErrorMessage(message = "") {
     this.errorMessage.textContent = message;
   }
 
   // Passer la saisie utilisateur en minuscules pour la comparaison +
   getDataToLower(inputPokeName) {
-    const removeAccents = (str) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-    const inputClean = removeAccents(inputPokeName.toLowerCase())
-    const data = this.pokemons.find(pokeObject => removeAccents(pokeObject.name.fr.toLowerCase()) === inputClean);
+    const removeAccents = (str) =>
+      str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const inputClean = removeAccents(inputPokeName.toLowerCase());
+    const data = this.pokemons.find(
+      (pokeObject) =>
+        removeAccents(pokeObject.name.fr.toLowerCase()) === inputClean
+    );
     return data;
   }
 
@@ -239,10 +249,9 @@ class SearchPokemon {
     this.form.reset();
     this.form.addEventListener("reset", () => {
       const divs = document.querySelectorAll("div");
-      divs.forEach( div => div.remove() );
-    })
+      divs.forEach((div) => div.remove());
+    });
   }
 }
-
 
 export { SearchPokemon };
